@@ -141,7 +141,7 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
             binaryOpOnStack(OpCode::Code::LessThanOrEqual, "LessThanOrEqual", <=)
             binaryOpOnStack(OpCode::Code::LessThan, "LessThan", <)
             binaryOpOnStack(OpCode::Code::Equal, "Equal", ==)
-            binaryOpOnStack(OpCode::Code::NotEqual, "NotEqual", <)
+            binaryOpOnStack(OpCode::Code::NotEqual, "NotEqual", !=)
             unaryOpOnStack(OpCode::Code::Not, "Not", !)
             unaryOpOnStack(OpCode::Code::Negate, "Negate", -)
             default: {
