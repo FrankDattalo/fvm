@@ -6,7 +6,7 @@
 #include "Assert.h"
 
 namespace {
-    std::string TAG = "ByteBuffer";
+    constexpr std::string TAG ("ByteBuffer");
 }
 
 void ByteBuffer::rewrite(uint8_t *bytes, std::size_t size, std::size_t position) {

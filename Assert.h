@@ -7,6 +7,6 @@
 
 #include <string>
 
-void assert_(bool mustBeTrue, std::string errorMessage);
+void assert_(bool mustBeTrue, const std::string & errorMessage);
 
 #endif //FVM_ASSERT_H

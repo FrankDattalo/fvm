@@ -4,7 +4,7 @@
 
 #include "Panic.h"
 
-void panic_(std::string reason) {
+void panic_(const std::string & reason) {
     std::cerr << reason << std::endl;
     exit(1);
 }

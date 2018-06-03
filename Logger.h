@@ -14,11 +14,11 @@ namespace Logger {
 
     void setDebug(bool debug);
 
-    void debug(std::string tag, std::string string);
+    void debug(const std::string & tag, const std::string & string);
 
     std::stringstream debugStream();
 
-    void debug(std::string tag, const std::stringstream& stringstream);
+    void debug(const std::string & tag, const std::stringstream& stringstream);
 };
 
 #endif //FVM_LOGGER_H

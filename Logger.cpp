@@ -12,7 +12,7 @@ void Logger::setDebug(bool debug) {
     LoggerDebug = debug;
 }
 
-void Logger::debug(std::string tag, std::string string) {
+void Logger::debug(const std::string & tag, const std::string & string) {
     if (LoggerDebug) {
         std::cout << "[DEBUG]-[" << std::setw(10) << tag << "]-[" << string << "]" << std::endl;
     }
@@ -22,6 +22,6 @@ std::stringstream Logger::debugStream() {
     return std::stringstream();
 }
 
-void Logger::debug(std::string tag, const std::stringstream& stringstream) {
+void Logger::debug(const std::string & tag, const std::stringstream& stringstream) {
     Logger::debug(tag, stringstream.str());
 }

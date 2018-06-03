@@ -7,7 +7,7 @@
 #include "Logger.h"
 
 namespace {
-    std::string TAG = "FileIo";
+    constexpr std::string TAG ("FileIo");
 }
 
 std::string FileIo::readFileToString(std::string fileName) {
@@ -74,7 +74,7 @@ std::vector<uint8_t> FileIo::readFileToVector(std::string fileName) {
     std::vector<uint8_t> ret;
 
     for (std::size_t i = 0; i < size; i++) {
-        uint8_t byte = static_cast<uint8_t>(buffer[i]);
+        auto byte = static_cast<uint8_t>(buffer[i]);
         ret.push_back(byte);
     }
 

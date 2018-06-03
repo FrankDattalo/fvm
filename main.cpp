@@ -21,14 +21,16 @@ int main(int argc, char** argv) {
 
     Logger::setDebug(false);
 
-    if (!strcmp(argv[1], "interpret")) {
+    std::string arg1(argv[1]);
+
+    if (arg1 == "interpret") {
 
         std::string contents = FileIo::readFileToString(argv[2]);
         Logger::debug("main", contents);
         std::vector<uint8_t> buffer = Assembler::assemble(contents);
         VirtualMachine::interpret(buffer);
 
-    } else if (!strcmp(argv[1], "assemble")) {
+    } else if (arg1 == "assemble") {
 
         std::string fileName(argv[2]);
         std::string contents = FileIo::readFileToString(fileName);
@@ -37,7 +39,7 @@ int main(int argc, char** argv) {
         std::string newFileName = fileName + ".fbin";
         FileIo::writeFileContents(buffer, newFileName);
 
-    } else if (!strcmp(argv[1], "run")) {
+    } else if (arg1 == "run") {
 
         std::vector<uint8_t> buffer = FileIo::readFileToVector(argv[2]);
         VirtualMachine::interpret(buffer);

@@ -133,14 +133,14 @@ namespace {
         append<int64_t>(buffer, val, bufferIndex);
     }
 
-    void match(std::string &current,
+    void match(const std::string &current,
                ByteBuffer &buffer,
                std::size_t& bufferIndex,
                bool &found,
-               std::string str,
+               const std::string& str,
                OpCode::Code opcode) {
 
-        if (!strcmp(str.c_str(), current.c_str())) {
+        if (current == str) {
 
             Logger::debug(TAG, "Matched " + str);
 

@@ -5,7 +5,7 @@
 #include "Assert.h"
 #include "Panic.h"
 
-void assert_(bool mustBeTrue, std::string errorMessage) {
+void assert_(bool mustBeTrue, const std::string & errorMessage) {
     if (!mustBeTrue) {
         panic_(errorMessage);
     }

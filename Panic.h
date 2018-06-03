@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 
-void panic_(std::string reason);
+void panic_(const std::string & reason);
 
 
 #endif //FVM_PANIC_H
