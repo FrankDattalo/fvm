@@ -10,7 +10,7 @@
 namespace  {
     int64_t retrieveInteger(uint8_t* code, std::size_t& ip) {
         uint8_t* base = &code[ip];
-        int64_t* upCastedPointer = reinterpret_cast<int64_t *>(base);
+        auto * upCastedPointer = reinterpret_cast<int64_t *>(base);
         int64_t  ret = *upCastedPointer;
         ip += sizeof(int64_t);
         return ret;
@@ -18,7 +18,7 @@ namespace  {
 
     std::size_t retrieveInstructionPointer(uint8_t* code, std::size_t& ip) {
         uint8_t* base = &code[ip];
-        std::size_t* upCastedPointer = reinterpret_cast<std::size_t *>(base);
+        auto * upCastedPointer = reinterpret_cast<std::size_t *>(base);
         std::size_t  ret = *upCastedPointer;
         ip += sizeof(std::size_t);
         return ret;
