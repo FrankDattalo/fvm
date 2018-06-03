@@ -10,7 +10,7 @@
 #include <map>
 
 namespace Assembler {
-    std::vector<uint8_t> assemble(const std::string & input);
+    void assemble(const std::string & input, std::vector<uint8_t> & out);
 };
 
 

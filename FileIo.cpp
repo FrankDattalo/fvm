@@ -7,10 +7,10 @@
 #include "Logger.h"
 
 namespace {
-    constexpr std::string TAG ("FileIo");
+    const std::string TAG ("FileIo");
 }
 
-std::string FileIo::readFileToString(std::string fileName) {
+void FileIo::readFileToString(const std::string & fileName, std::string & outContents) {
     std::ifstream input;
 
     Logger::debug(TAG, "Trying to open: " + fileName);
@@ -36,14 +36,12 @@ std::string FileIo::readFileToString(std::string fileName) {
 
     Logger::debug(TAG, "Read file: " + fileName);
 
-    std::string ret(buffer);
+    outContents = std::string(buffer);
 
     input.close();
-
-    return ret;
 }
 
-std::vector<uint8_t> FileIo::readFileToVector(std::string fileName) {
+void FileIo::readFileToVector(const std::string & fileName, std::vector<uint8_t> & outContents) {
 
     std::ifstream input;
 
@@ -71,17 +69,15 @@ std::vector<uint8_t> FileIo::readFileToVector(std::string fileName) {
 
     input.close();
 
-    std::vector<uint8_t> ret;
+    outContents.clear();
 
     for (std::size_t i = 0; i < size; i++) {
         auto byte = static_cast<uint8_t>(buffer[i]);
-        ret.push_back(byte);
+        outContents.push_back(byte);
     }
-
-    return ret;
 }
 
-void FileIo::writeFileContents(std::vector<uint8_t> contents, std::string fileName) {
+void FileIo::writeFileContents(const std::vector<uint8_t> & contents, const std::string & fileName) {
 
     std::ofstream output;
 

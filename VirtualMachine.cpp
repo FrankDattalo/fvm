@@ -59,7 +59,7 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
 
     while (loop) {
         if (ip >= size) {
-            panic_("Instruction pointer overrun!");
+            panic_("Instruction pointer overrun! Ip: " + std::to_string(ip) + ", Size: " + std::to_string(size));
         }
 
         uint8_t currentByte = code[ip];

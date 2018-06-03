@@ -10,7 +10,7 @@
 #include "OpCode.h"
 
 namespace {
-    std::string TAG = "Assembler";
+    const std::string TAG ("Assembler");
 
     struct Position {
         std::size_t bufferIndex;
@@ -18,9 +18,7 @@ namespace {
     };
 
 
-    std::vector<std::string> tokenize(const std::string &input) {
-
-        std::vector<std::string> ret;
+    void tokenize(const std::string &input, std::vector<std::string> & ret) {
 
         std::regex regex("(\\s+|//.*)");
 
@@ -31,8 +29,6 @@ namespace {
             std::string current = *iterator;
             ret.push_back(current);
         }
-
-        return ret;
     }
 
     bool isInteger(const std::string &str) {
@@ -193,13 +189,15 @@ namespace {
 
 }
 
-std::vector<uint8_t> Assembler::assemble(const std::string & input) {
+void Assembler::assemble(const std::string & input, std::vector<uint8_t> & out) {
 
-    ByteBuffer buffer;
+    ByteBuffer buffer(out);
     std::size_t bufferIndex = 0;
-    std::vector<std::string>      tokens = std::move(tokenize(input));
+    std::vector<std::string> tokens;
     std::map<std::string, std::size_t> labelBufferLocations;
-    std::vector<Position>         unresolvedLocations;
+    std::vector<Position> unresolvedLocations;
+
+    tokenize(input, tokens);
 
     std::size_t size = tokens.size();
     for (std::size_t tokensIndex = 0; tokensIndex < size; tokensIndex++) {
@@ -234,6 +232,6 @@ std::vector<uint8_t> Assembler::assemble(const std::string & input) {
     resolveLocations(buffer, labelBufferLocations, unresolvedLocations, tokens);
     buffer.debugBytes();
 
-    return buffer.vector();
+    out = buffer.vector();
 }
 

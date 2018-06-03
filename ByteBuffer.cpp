@@ -6,7 +6,7 @@
 #include "Assert.h"
 
 namespace {
-    constexpr std::string TAG ("ByteBuffer");
+    const std::string TAG ("ByteBuffer");
 }
 
 void ByteBuffer::rewrite(uint8_t *bytes, std::size_t size, std::size_t position) {
@@ -47,6 +47,6 @@ void ByteBuffer::debugBytes() {
     Logger::debug(TAG, stream);
 }
 
-std::vector<uint8_t> ByteBuffer::vector() {
+std::vector<uint8_t>& ByteBuffer::vector() {
     return this->data;
 }

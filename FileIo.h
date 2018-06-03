@@ -11,11 +11,12 @@
 
 namespace FileIo {
 
-    std::string readFileToString(std::string fileName);
+    void readFileToString(const std::string & fileName, std::string & outContents);
 
-    std::vector<uint8_t> readFileToVector(std::string fileName);
+    void readFileToVector(const std::string & fileName, std::vector<uint8_t> & outContents);
 
-    void writeFileContents(std::vector<uint8_t> contents, std::string fileName);
+    void writeFileContents(const std::vector<uint8_t> & contents, const std::string & fileName);
+
 };
 
 

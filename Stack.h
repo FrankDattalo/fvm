@@ -9,7 +9,7 @@
 #include "Logger.h"
 
 namespace {
-    constexpr std::string TAG ("Stack");
+    const std::string TAG ("Stack");
 }
 
 template<typename T>
