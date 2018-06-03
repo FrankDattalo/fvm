@@ -57,7 +57,11 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
     Stack<int64_t> data;
     Stack<std::size_t>  callStack;
 
-    while (loop && ip < size) {
+    while (loop) {
+        if (ip >= size) {
+            panic_("Instruction pointer overrun!");
+        }
+
         uint8_t currentByte = code[ip];
         auto opCode = static_cast<OpCode::Code>(currentByte);
         ip++;
@@ -152,3 +156,6 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
         data.debugStack();
     }
 }
+
+#undef binaryOpOnStack
+#undef unaryOpOnStack
