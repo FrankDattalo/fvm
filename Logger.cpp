@@ -6,6 +6,7 @@
 
 namespace {
     bool LoggerDebug = false;
+    std::mutex lock;
 }
 
 void Logger::setDebug(bool debug) {
@@ -14,7 +15,9 @@ void Logger::setDebug(bool debug) {
 
 void Logger::debug(const std::string & tag, const std::string & string) {
     if (LoggerDebug) {
-        std::cout << "[DEBUG]-[" << std::setw(10) << tag << "]-[" << string << "]" << std::endl;
+        std::lock_guard<std::mutex> guard(lock);
+
+        std::cout << "[DEBUG]-[" << std::setw(20) << tag << "]-[" << string << "]" << std::endl;
     }
 }
 

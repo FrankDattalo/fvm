@@ -46,7 +46,3 @@ void ByteBuffer::debugBytes() {
 
     Logger::debug(TAG, stream);
 }
-
-std::vector<uint8_t>& ByteBuffer::vector() {
-    return this->data;
-}

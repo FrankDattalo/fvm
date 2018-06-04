@@ -21,4 +21,8 @@ add_executable(fvm
         VirtualMachine.h
         FileIo.cpp
         FileIo.h
-        Stack.h)
+        Stack.h
+        Object.cpp
+        Object.h
+        Writer.cpp
+        Writer.h GarbageCollector.cpp GarbageCollector.h Heap.cpp Heap.h)

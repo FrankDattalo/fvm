@@ -7,10 +7,12 @@
 
 #include <cstdint>
 #include <vector>
+#include <iostream>
+#include "Writer.h"
 
 namespace VirtualMachine {
 
-    void interpret(std::vector<uint8_t>& code);
+    void interpret(std::vector<uint8_t>& codeVector, Writer & writer);
 };
 
 

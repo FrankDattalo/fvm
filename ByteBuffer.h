@@ -20,8 +20,6 @@ public:
 
     void rewrite(uint8_t* bytes, std::size_t size, std::size_t position);
 
-    std::vector<uint8_t>& vector();
-
     void debugBytes();
 };
 

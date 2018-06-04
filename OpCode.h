@@ -32,7 +32,25 @@ public:
         Copy,
         Call,
         Return,
-        End
+        End,
+        FloatAdd,
+        FloatSubtract,
+        FloatDivide,
+        FloatMultiply,
+        PrintFloat,
+        FloatNegate,
+        FloatLessThanOrEqual,
+        FloatLessThan,
+        FloatGreaterThan,
+        FloatGreaterThanOrEqual,
+        FloatNotEqual,
+        FloatEqual,
+        IntegerToFloat,
+        FloatToInteger,
+        LoadAddress,
+        StoreAddress,
+        MarkAddressCollectable,
+        New
     };
 
     static uint8_t getByte(OpCode::Code code);

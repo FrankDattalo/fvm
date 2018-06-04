@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <string>
-#include <map>
+#include <unordered_map>
 
 namespace Assembler {
     void assemble(const std::string & input, std::vector<uint8_t> & out);

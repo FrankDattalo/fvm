@@ -2,17 +2,24 @@
 // Created by Frank Dattalo on 6/2/18.
 //
 
+#include <thread>
 #include "VirtualMachine.h"
 #include "OpCode.h"
 #include "Panic.h"
 #include "Stack.h"
+#include "Writer.h"
+#include "Object.h"
+#include "Heap.h"
+#include "GarbageCollector.h"
 
 namespace  {
-    int64_t retrieveInteger(uint8_t* code, std::size_t& ip) {
+    const std::string TAG("VirtualMachine");
+
+    Object retrieveImmediate(uint8_t* code, std::size_t& ip) {
         uint8_t* base = &code[ip];
-        auto * upCastedPointer = reinterpret_cast<int64_t *>(base);
-        int64_t  ret = *upCastedPointer;
-        ip += sizeof(int64_t);
+        auto * upCastedPointer = reinterpret_cast<Object *>(base);
+        Object  ret = *upCastedPointer;
+        ip += sizeof(Object);
         return ret;
     }
 
@@ -25,28 +32,70 @@ namespace  {
     }
 }
 
-#define unaryOpOnStack(opCode, toPrint, op) \
+#define unaryIntegerOpOnStack(opCode, toPrint, op) \
     case opCode: { \
         Logger::debug(TAG, toPrint); \
-        int64_t value = op data.pop(); \
-        Logger::debug(TAG, "Value: " + std::to_string(value)); \
-        data.push(value); \
+        Object val = data.pop(); \
+        val.int64 = op val.int64; \
+        Logger::debug(TAG, "Value: " + std::to_string(val.int64)); \
+        data.push(val); \
         break;\
     }
 
-#define binaryOpOnStack(opCode, toPrint, op) \
+#define binaryIntegerOpOnStack(opCode, toPrint, op) \
     case opCode: { \
         Logger::debug(TAG, toPrint);\
-        int64_t left = data.pop();\
-        int64_t right = data.pop();\
-        Logger::debug(TAG, "Left: " + std::to_string(left) + ", Right: " + std::to_string(right));\
-        int64_t result = left op right;\
+        Object left = data.pop();\
+        Object right = data.pop();\
+        Logger::debug(TAG, "Left: " + std::to_string(left.int64) + ", Right: " + std::to_string(right.int64));\
+        int64_t result = left.int64 op right.int64;\
         Logger::debug(TAG, "Result: " + std::to_string(result));\
-        data.push(result);\
+        Object o {};\
+        o.int64 = result;\
+        data.push(o);\
         break;\
     }
 
-void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
+#define unaryFloatOpOnStack(opCode, toPrint, op) \
+    case opCode: { \
+        Logger::debug(TAG, toPrint); \
+        Object val = data.pop(); \
+        val.float64 = op val.float64; \
+        Logger::debug(TAG, "Value: " + std::to_string(val.float64)); \
+        data.push(val); \
+        break;\
+    }
+
+#define binaryFloatOpOnStack(opCode, toPrint, op) \
+    case opCode: { \
+        Logger::debug(TAG, toPrint);\
+        Object left = data.pop();\
+        Object right = data.pop();\
+        Logger::debug(TAG, "Left: " + std::to_string(left.float64) + ", Right: " + std::to_string(right.float64));\
+        double result = left.float64 op right.float64;\
+        Logger::debug(TAG, "Result: " + std::to_string(result));\
+        Object o {};\
+        o.float64 = result;\
+        data.push(o);\
+        break;\
+    }
+
+#define binaryFloatOpOnStackToBoolean(opCode, toPrint, op) \
+    case opCode: { \
+        Logger::debug(TAG, toPrint);\
+        Object left = data.pop();\
+        Object right = data.pop();\
+        Logger::debug(TAG, "Left: " + std::to_string(left.float64) + ", Right: " + std::to_string(right.float64));\
+        bool result = left.float64 op right.float64;\
+        int64_t upcasted = result; \
+        Logger::debug(TAG, "Result: " + std::to_string(upcasted));\
+        Object o {};\
+        o.int64 = upcasted;\
+        data.push(o);\
+        break;\
+    }
+
+void VirtualMachine::interpret(std::vector<uint8_t>& codeVector, Writer & writer) {
     uint8_t* code = codeVector.data();
     std::size_t size = codeVector.size();
 
@@ -54,8 +103,17 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
 
     bool loop = true;
 
-    Stack<int64_t> data;
+    Stack<Object> data;
+    Heap heap;
     Stack<std::size_t>  callStack;
+
+    Logger::debug(TAG, "Spawning GC thread");
+
+    std::thread gcThread([&data, &heap, &loop]() {
+        GarbageCollector::run(data, heap, loop);
+    });
+
+    Logger::debug(TAG, "GC thread spawned");
 
     while (loop) {
         if (ip >= size) {
@@ -69,8 +127,8 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
         switch (opCode) {
             case OpCode::Code::Push: {
                 Logger::debug(TAG, "Push");
-                int64_t val = retrieveInteger(code, ip);
-                data.push(val);
+                Object o = retrieveImmediate(code, ip);
+                data.push(o);
                 break;
             }
             case OpCode::Code::Pop: {
@@ -80,20 +138,26 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
             }
             case OpCode::Code::Copy: {
                 Logger::debug(TAG, "Copy");
-                int64_t value = data.top();
-                Logger::debug(TAG, "Value: " + std::to_string(value));
+                Object value = data.top();
+                Logger::debug(TAG, "Value: " + std::to_string(value.int64));
                 data.push(value);
                 break;
             }
             case OpCode::Code::PrintInteger: {
                 Logger::debug(TAG, "PrintInteger");
-                int64_t left = data.pop();
-                std::cout << left;
+                Object o = data.pop();
+                writer.writeInteger(o.int64);
+                break;
+            }
+            case OpCode::Code::PrintFloat: {
+                Logger::debug(TAG, "PrintFloat");
+                Object o = data.pop();
+                writer.writeDouble(o.float64);
                 break;
             }
             case OpCode::Code::PrintLine: {
                 Logger::debug(TAG, "PrintLine");
-                std::cout << std::endl;
+                writer.writeLine();
                 break;
             }
             case OpCode::Code::End: {
@@ -119,8 +183,8 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
             case OpCode::Code::JumpZero: {
                 Logger::debug(TAG, "JumpZero");
                 std::size_t newIp = retrieveInstructionPointer(code, ip);
-                int64_t value = data.pop();
-                if (!value) {
+                Object o = data.pop();
+                if (!o.int64) {
                     Logger::debug(TAG, "Jumping to " + std::to_string(newIp));
                     ip = newIp;
                 } else {
@@ -135,27 +199,101 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector) {
                 ip = newIp;
                 break;
             }
-            binaryOpOnStack(OpCode::Code::Add, "Add", +)
-            binaryOpOnStack(OpCode::Code::Subtract, "Subtract", -)
-            binaryOpOnStack(OpCode::Code::Multiply, "Multiply", *)
-            binaryOpOnStack(OpCode::Code::Divide, "Divide", /)
-            binaryOpOnStack(OpCode::Code::Modulus, "Modulus", %)
-            binaryOpOnStack(OpCode::Code::GreaterThanOrEqual, "GreaterThanOrEqual", >=)
-            binaryOpOnStack(OpCode::Code::GreaterThan, "GreaterThan", >)
-            binaryOpOnStack(OpCode::Code::LessThanOrEqual, "LessThanOrEqual", <=)
-            binaryOpOnStack(OpCode::Code::LessThan, "LessThan", <)
-            binaryOpOnStack(OpCode::Code::Equal, "Equal", ==)
-            binaryOpOnStack(OpCode::Code::NotEqual, "NotEqual", !=)
-            unaryOpOnStack(OpCode::Code::Not, "Not", !)
-            unaryOpOnStack(OpCode::Code::Negate, "Negate", -)
+            case OpCode::Code::IntegerToFloat: {
+                Logger::debug(TAG, "IntegerToFloat");
+                Object o = data.pop();
+                o.float64 = static_cast<double>(o.int64);
+                Logger::debug(TAG, "Converted: " + std::to_string(o.float64));
+                data.push(o);
+                break;
+            }
+            case OpCode::Code::FloatToInteger: {
+                Logger::debug(TAG, "FloatToInteger");
+                Object o = data.pop();
+                o.int64 = static_cast<int64_t>(o.float64);
+                Logger::debug(TAG, "Converted: " + std::to_string(o.int64));
+                data.push(o);
+                break;
+            }
+            case OpCode::Code::LoadAddress: {
+                Logger::debug(TAG, "LoadAddress");
+                Object offset = data.pop();
+                Object address = data.pop();
+                Logger::debug(TAG, "Address: " + std::to_string(address.int64));
+                Logger::debug(TAG, "Offset: " + std::to_string(offset.int64));
+                HeapObject* obj = heap.getHeapObject(address);
+                Object o = obj->get(offset.int64);
+                Logger::debug(TAG, "Result: " + std::to_string(o.int64));
+                data.push(o);
+                break;
+            }
+            case OpCode::Code::StoreAddress: {
+                Logger::debug(TAG, "StoreAddress");
+                Object toStore = data.pop();
+                Object offset = data.pop();
+                Object address = data.pop();
+                Logger::debug(TAG, "Address: " + std::to_string(address.int64));
+                Logger::debug(TAG, "Offset: " + std::to_string(offset.int64));
+                Logger::debug(TAG, "ToStore: " + std::to_string(toStore.int64));
+                HeapObject* obj = heap.getHeapObject(address);
+                obj->set(offset.int64, toStore);
+                break;
+            }
+            case OpCode::Code::MarkAddressCollectable: {
+                Logger::debug(TAG, "MarkAddressCollectable");
+                Object address = data.pop();
+                Logger::debug(TAG, "Address: " + std::to_string(address.int64));
+                HeapObject* obj = heap.getHeapObject(address);
+                obj->gcAllowed = true;
+                break;
+            }
+            case OpCode::Code::New: {
+                Logger::debug(TAG, "New");
+                Object itemSize = data.pop();
+                Logger::debug(TAG, "Size: " + std::to_string(itemSize.int64));
+                HeapObject* obj = heap.newHeapObject(itemSize.int64);
+                Object result{};
+                result.ptr64 = obj;
+                Logger::debug(TAG, "Created new heap object at " + std::to_string(result.int64));
+                data.push(result);
+                break;
+            }
+            binaryIntegerOpOnStack(OpCode::Code::Add, "Add", +)
+            binaryIntegerOpOnStack(OpCode::Code::Subtract, "Subtract", -)
+            binaryIntegerOpOnStack(OpCode::Code::Multiply, "Multiply", *)
+            binaryIntegerOpOnStack(OpCode::Code::Divide, "Divide", /)
+            binaryIntegerOpOnStack(OpCode::Code::Modulus, "Modulus", %)
+            binaryIntegerOpOnStack(OpCode::Code::GreaterThanOrEqual, "GreaterThanOrEqual", >=)
+            binaryIntegerOpOnStack(OpCode::Code::GreaterThan, "GreaterThan", >)
+            binaryIntegerOpOnStack(OpCode::Code::LessThanOrEqual, "LessThanOrEqual", <=)
+            binaryIntegerOpOnStack(OpCode::Code::LessThan, "LessThan", <)
+            binaryIntegerOpOnStack(OpCode::Code::Equal, "Equal", ==)
+            binaryIntegerOpOnStack(OpCode::Code::NotEqual, "NotEqual", !=)
+            unaryIntegerOpOnStack(OpCode::Code::Not, "Not", !)
+            unaryIntegerOpOnStack(OpCode::Code::Negate, "Negate", -)
+            binaryFloatOpOnStack(OpCode::Code::FloatAdd, "FloatAdd", +)
+            binaryFloatOpOnStack(OpCode::Code::FloatSubtract, "FloatSubtract", -)
+            binaryFloatOpOnStack(OpCode::Code::FloatDivide, "FloatDivide", /)
+            binaryFloatOpOnStack(OpCode::Code::FloatMultiply, "FloatMultiply", *)
+            binaryFloatOpOnStackToBoolean(OpCode::Code::FloatLessThanOrEqual, "FloatLessThanOrEqual", <=)
+            binaryFloatOpOnStackToBoolean(OpCode::Code::FloatLessThan, "FloatLessThan", <)
+            binaryFloatOpOnStackToBoolean(OpCode::Code::FloatGreaterThan, "FloatGreaterThan", >)
+            binaryFloatOpOnStackToBoolean(OpCode::Code::FloatGreaterThanOrEqual, "FloatGreaterThanOrEqual", >=)
+            binaryFloatOpOnStackToBoolean(OpCode::Code::FloatNotEqual, "FloatNotEqual", !=)
+            binaryFloatOpOnStackToBoolean(OpCode::Code::FloatEqual, "FloatEqual", ==)
+            unaryFloatOpOnStack(OpCode::Code::FloatNegate, "FloatNegate", -)
             default: {
                 panic_("Unknown opCode: " + std::to_string(currentByte));
             }
         }
 
         data.debugStack();
+        heap.debugHeap();
     }
-}
 
-#undef binaryOpOnStack
-#undef unaryOpOnStack
+    Logger::debug(TAG, "Awaiting join of GC thread");
+
+    gcThread.join();
+
+    Logger::debug(TAG, "GC thread joined");
+}
