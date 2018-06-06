@@ -1,5 +1,5 @@
 
-#include "Logger.h"
+#include "Debug.h"
 #include "ByteBuffer.h"
 #include "Assembler.h"
 #include "VirtualMachine.h"
@@ -7,7 +7,7 @@
 #include "Panic.h"
 
 void usage() {
-    panic_("Usage:\n"
+    RUNTIME_ASSERT(false, "Usage:\n"
            "  fvm interpret <path to assembly file>\n"
            "  fvm assemble <path to assembly file>\n"
            "  fvm run <path to compiled file>\n");
@@ -19,8 +19,6 @@ int main(int argc, char** argv) {
         usage();
     }
 
-    Logger::setDebug(false);
-
     std::string arg1(argv[1]);
     std::string arg2(argv[2]);
 
@@ -28,7 +26,7 @@ int main(int argc, char** argv) {
 
         std::string contents;
         FileIo::readFileToString(arg2, contents);
-        Logger::debug("main", contents);
+        DEBUG("main", contents);
         std::vector<uint8_t> buffer;
         Assembler::assemble(contents, buffer);
         Writer writer(std::cout);
@@ -38,7 +36,7 @@ int main(int argc, char** argv) {
 
         std::string contents;
         FileIo::readFileToString(arg2, contents);
-        Logger::debug("main", contents);
+        DEBUG("main", contents);
         std::vector<uint8_t> buffer;
         Assembler::assemble(contents, buffer);
         std::string newFileName = arg2 + ".fbin";

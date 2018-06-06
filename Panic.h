@@ -8,7 +8,12 @@
 #include <string>
 #include <iostream>
 
-void panic_(const std::string & reason);
+#define RUNTIME_ASSERT(val, reason) do { \
+    if (!(val)) { \
+        std::cout << (reason) << std::endl; \
+        exit(1); \
+    } \
+} while (false)
 
 
 #endif //FVM_PANIC_H

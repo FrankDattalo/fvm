@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "Logger.h"
+#include "Debug.h"
 
 class ByteBuffer {
 private:

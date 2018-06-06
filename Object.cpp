@@ -3,44 +3,43 @@
 //
 
 #include <string>
+
 #include "Object.h"
-#include "Logger.h"
-#include "Assert.h"
+#include "Debug.h"
+#include "Panic.h"
 
 namespace {
     const std::string TAG ( "HeapObject" );
 }
 
-HeapObject::HeapObject(int64_t numberObjects) {
+HeapObject::HeapObject(int64_t size, int8_t heapGeneration) {
 
-    assert_(numberObjects >= 0, "Number of objects was negative!");
+    RUNTIME_ASSERT(size >= 0, "Size was negative!");
 
-    Logger::debug(TAG, "Initializing heap object with " + std::to_string(numberObjects) + " objects");
+    DEBUG(TAG, "Initializing heap object with " + std::to_string(numberObjects) + " objects");
 
-    this->gcAllowed = false;
-    this->markFlag = false;
-    this->heapGeneration = 0;
-    this->numberObjects = numberObjects;
-    this->objects = new Object[this->numberObjects];
+
 }
 
 HeapObject::~HeapObject() {
 
-    Logger::debug(TAG, "Destroying heap object with " + std::to_string(this->numberObjects) + " objects");
+    DEBUG(TAG, "Destroying heap object with " + std::to_string(this->numberObjects) + " objects");
 
     delete[] this->objects;
 }
 
-void HeapObject::set(int64_t offset, Object value) {
-    assert_(offset >= 0, "Offset was negative!");
-    assert_(offset < this->numberObjects, "Offset out of bounds!");
+void HeapObject::set(int64_t offset, const Object & value) {
+    RUNTIME_ASSERT(offset >= 0, "Offset was negative!");
+    RUNTIME_ASSERT(offset < this->_size, "Offset out of bounds!");
+    RUNTIME_ASSERT(!this->isString(), "Tried to call set on a string!");
 
     this->objects[offset] = value;
 }
 
 Object HeapObject::get(int64_t offset) {
-    assert_(offset >= 0, "Offset was negative!");
-    assert_(offset < this->numberObjects, "Offset out of bounds!");
+    RUNTIME_ASSERT(offset >= 0, "Offset was negative!");
+    RUNTIME_ASSERT(offset < this->_size, "Offset out of bounds!");
+    RUNTIME_ASSERT(!this->isString(), "Tried to call get on a string!");
 
     return this->objects[offset];
 }

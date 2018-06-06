@@ -5,8 +5,11 @@
 #include <set>
 #include <thread>
 #include <list>
+#include <cstdlib>
+
 #include "GarbageCollector.h"
 #include "Heap.h"
+#include "Panic.h"
 
 namespace {
     const std::string TAG("GarbageCollector");
@@ -15,75 +18,79 @@ namespace {
                                    Heap & heap,
                                    std::list<HeapObject *> & outList) {
 
-        assert_(outList.size() == 0, "OutList was not zeroed out!");
+        ASSERT(outList.empty(), "OutList was not zeroed out!");
 
         Object outObject{};
 
         for (size_t i = 0; data.at(i, outObject); i++) {
             if (heap.isHeapObject(outObject.ptr64)) {
-                Logger::debug(TAG, "Found heap object reference on stack");
+                DEBUG(TAG, "Found heap object reference on stack");
                 outList.push_back(outObject.ptr64);
             }
         }
 
-        Logger::debug(TAG, "Found " + std::to_string(outList.size()) + " heap references on the stack");
+        DEBUG(TAG, "Found " + std::to_string(outList.size()) + " heap references on the stack");
     }
 
-    void mark(std::list<HeapObject *> & searchBuffer, Heap & heap, int64_t heapGeneration) {
+    void mark(std::list<HeapObject *> & searchBuffer, Heap & heap, int8_t heapGeneration) {
 
         std::list<HeapObject*> temp;
 
-        Logger::debug(TAG, "Mark started with initial search buffer size of " + std::to_string(searchBuffer.size()));
+        DEBUG(TAG, "Mark started with initial search buffer size of " + std::to_string(searchBuffer.size()));
 
-        int64_t searchIteration = 0;
+        IF_DEBUG(int64_t searchIteration = 0);
 
-        while (searchBuffer.size() > 0) {
+        while (!searchBuffer.empty()) {
 
-            Logger::debug(TAG, "Iteration " + std::to_string(searchIteration)
+            DEBUG(TAG, "Iteration " + std::to_string(searchIteration)
                                + " starting search buffer size is " + std::to_string(searchBuffer.size()));
 
-            while (searchBuffer.size() > 0) {
+            while (!searchBuffer.empty()) {
                 HeapObject* item = searchBuffer.front();
                 searchBuffer.pop_front();
 
-                if (item->markFlag) {
-                    Logger::debug(TAG, "Detected circular reference");
+                if (item->isMarked()) {
+                    DEBUG(TAG, "Detected circular reference");
                     continue;
                 }
 
-                item->heapGeneration = heapGeneration;
-                item->markFlag = true;
+                item->setHeapGeneration(heapGeneration);
+                item->setMark(true);
 
-                int64_t numFields = item->numberObjects;
-                Logger::debug(TAG, "Recursively searching " + std::to_string(numFields) + " fields for heap references");
+                if (item->hasReferences()) {
+                    int64_t numFields = item->size();
+                    DEBUG(TAG, "Recursively searching " + std::to_string(numFields) + " fields for heap references");
 
-                int64_t numFound = 0;
+                    IF_DEBUG(int64_t numFound = 0);
 
-                for (int64_t i = 0; i < numFields; i++) {
-                    Object objectI = item->get(i);
-                    if (heap.isHeapObject(objectI.ptr64)) {
-                        Logger::debug(TAG, "Found heap reference within heap object");
-                        temp.push_front(objectI.ptr64);
-                        numFound++;
+                    for (int64_t i = 0; i < numFields; i++) {
+                        Object objectI = item->get(i);
+                        if (heap.isHeapObject(objectI.ptr64)) {
+                            DEBUG(TAG, "Found heap reference within heap object");
+                            temp.push_front(objectI.ptr64);
+                            IF_DEBUG(numFound++);
+                        }
                     }
-                }
 
-                Logger::debug(TAG, "Found " + std::to_string(numFound) + " heap references in members");
+                    DEBUG(TAG, "Found " + std::to_string(numFound) + " heap references in members");
+                }
             }
+
+            ASSERT(searchBuffer.empty(), "Search buffer was non empty before swap");
 
             std::swap(temp, searchBuffer);
 
-            searchIteration++;
+            IF_DEBUG(searchIteration++);
         }
 
-        Logger::debug(TAG, "Mark finished after " + std::to_string(searchIteration) + " iterations");
+        DEBUG(TAG, "Mark finished after " + std::to_string(searchIteration) + " iterations");
     }
 
-    void sweep(Heap & heap, int64_t heapGeneration) {
+    void sweep(Heap & heap) {
 
         heap.beginDeleteHeapObjects();
 
-        heap.freeHeapObjects(heapGeneration);
+        heap.freeHeapObjects();
 
         heap.commitDeleteObjects();
     }
@@ -91,24 +98,26 @@ namespace {
 
 void GarbageCollector::run(Stack<Object> &data, Heap & heap, bool &loop) {
 
-    Logger::debug(TAG, "GC thread started");
+    DEBUG(TAG, "GC thread started");
 
-    int64_t heapGeneration = 1;
+    int8_t heapGeneration = 1;
     std::list<HeapObject *> stackReferences;
 
     while (loop) {
 
-        assert_(stackReferences.size() == 0, "Stack references should be cleared every iteration!");
+        ASSERT(stackReferences.empty(), "Stack references should be cleared every iteration!");
 
-        Logger::debug(TAG, "Beginning generation " + std::to_string(heapGeneration));
+        DEBUG(TAG, "Beginning generation " + std::to_string(heapGeneration));
+
+        heap.setHeapGeneration(heapGeneration);
 
         accumulateStackReferences(data, heap, stackReferences);
 
         mark(stackReferences, heap, heapGeneration);
-        sweep(heap, heapGeneration);
+        sweep(heap);
 
         heapGeneration++;
     }
 
-    Logger::debug(TAG, "GC thread ending");
+    DEBUG(TAG, "GC thread ending");
 }

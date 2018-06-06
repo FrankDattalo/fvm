@@ -12,12 +12,14 @@
 #include <unordered_set>
 
 #include "Object.h"
+#include "Debug.h"
 
 class Heap {
 private:
     std::mutex                      lock;
     std::unordered_set<HeapObject*> heapObjects;
     std::list<HeapObject*>          markedForDelete;
+    int8_t                          heapGeneration;
 
 public:
     HeapObject* newHeapObject(int64_t numberObjects);
@@ -28,11 +30,13 @@ public:
 
     void commitDeleteObjects();
 
+    void freeHeapObjects();
+
     void beginDeleteHeapObjects();
 
-    void freeHeapObjects(int64_t heapGeneration);
+    void setHeapGeneration(int8_t gen);
 
-    void debugHeap();
+    IF_DEBUG(void debugHeap());
 };
 
 

@@ -9,6 +9,7 @@
 #include "ByteBuffer.h"
 #include "Panic.h"
 #include "OpCode.h"
+#include "Assert.h"
 
 namespace {
     const std::string TAG ("Assembler");
@@ -89,13 +90,11 @@ namespace {
             std::string token = "@" + tokens[pos.tokensIndex];
 
             auto find = labelBufferLocations.find(token);
-            if (find == labelBufferLocations.end()) {
-                panic_("No declaration found for " + token);
-            }
+            RUNTIME_ASSERT(find != labelBufferLocations.end(), "No declaration found for " + token);
 
             std::size_t position = find->second;
 
-            Logger::debug(TAG, "Resolved location of label " + token + " to location " + std::to_string(position));
+            DEBUG(TAG, "Resolved location of label " + token + " to location " + std::to_string(position));
 
             buffer.rewrite(reinterpret_cast<uint8_t *>(&position), sizeof(std::size_t), pos.bufferIndex);
         }
@@ -106,9 +105,7 @@ namespace {
                                 std::size_t bufferIndex) {
 
         auto find = labelBufferLocations.find(current);
-        if (find != labelBufferLocations.end()) {
-            panic_("Duplicate declaration of " + current);
-        }
+        RUNTIME_ASSERT(find == labelBufferLocations.end(), "Duplicate declaration of " + current);
 
         labelBufferLocations[current] = bufferIndex;
     }
@@ -127,11 +124,11 @@ namespace {
         auto find = labelBufferLocations.find(fullLabel);
         if (find != labelBufferLocations.end()) {
 
-            Logger::debug(TAG, "Declared location: " + current);
+            DEBUG(TAG, "Declared location: " + current);
             position = find->second;
         } else {
 
-            Logger::debug(TAG, "Unresolved location: " + current);
+            DEBUG(TAG, "Unresolved location: " + current);
 
             Position p { bufferIndex, tokensIndex};
             unresolvedLocations.push_back(p);
@@ -165,11 +162,9 @@ namespace {
 
         if (current == str) {
 
-            Logger::debug(TAG, "Matched " + str);
+            DEBUG(TAG, "Matched " + str);
 
-            if (found) {
-                panic_("Multiple matching rules for " + current);
-            }
+            ASSERT(!found, "Multiple matching rules for " + current);
 
             uint8_t  byte = OpCode::getByte(opcode);
 
@@ -227,9 +222,7 @@ namespace {
         match(current, buffer, bufferIndex, found, "MarkAddressCollectable",        OpCode::Code::MarkAddressCollectable);
         match(current, buffer, bufferIndex, found, "New",                           OpCode::Code::New);
 
-        if (!found) {
-            panic_("No assembler rule for input: " + current);
-        }
+        RUNTIME_ASSERT(found, "No assembler rule for input: " + current);
     }
 
 }
@@ -249,24 +242,24 @@ void Assembler::assemble(const std::string & input, std::vector<uint8_t> & out) 
 
         std::string current = tokens[tokensIndex];
         if (current.length() == 0) {
-            Logger::debug(TAG, "Skipping empty string");
+            DEBUG(TAG, "Skipping empty string");
             continue;
         }
 
         if (!strncmp(current.c_str(), "@@", 2)) {
-            Logger::debug(TAG, "Label definition found: " + current);
+            DEBUG(TAG, "Label definition found: " + current);
             handleLabelDeclaration(current, labelBufferLocations, bufferIndex);
 
         } else if (!strncmp(current.c_str(), "@", 1)) {
-            Logger::debug(TAG, "Label usage found: " + current);
+            DEBUG(TAG, "Label usage found: " + current);
             handleLabelUsage(current, labelBufferLocations, buffer, unresolvedLocations, bufferIndex, tokensIndex);
 
         } else if (isInteger(current)) {
-            Logger::debug(TAG, "Integer usage found: " + current);
+            DEBUG(TAG, "Integer usage found: " + current);
             handleIntegerUsage(current, buffer, bufferIndex);
 
         } else if (isFloat(current)) {
-            Logger::debug(TAG, "Float usage found: " + current);
+            DEBUG(TAG, "Float usage found: " + current);
             handleFloatUsage(current, buffer, bufferIndex);
 
         } else {
@@ -276,9 +269,11 @@ void Assembler::assemble(const std::string & input, std::vector<uint8_t> & out) 
         buffer.debugBytes();
     }
 
-    Logger::debug(TAG, "Resolving forward declarations");
+    DEBUG(TAG, "Resolving forward declarations");
     buffer.debugBytes();
+
     resolveLocations(buffer, labelBufferLocations, unresolvedLocations, tokens);
+
     buffer.debugBytes();
 }
 

@@ -7,7 +7,7 @@
 
 #include <vector>
 #include "Assert.h"
-#include "Logger.h"
+#include "Debug.h"
 
 template<typename T>
 class Stack {
@@ -28,7 +28,7 @@ public:
     T pop() {
         std::lock_guard<std::mutex> guard(lock);
 
-        assert_(this->_top > 0, "Pop called on an empty stack!");
+        RUNTIME_ASSERT(this->_top > 0, "Pop called on an empty stack!");
 
         T ret = this->data[this->_top - 1];
         this->_top--;
@@ -40,7 +40,7 @@ public:
     T top() {
         std::lock_guard<std::mutex> guard(lock);
 
-        assert_(this->_top > 0, "Top called on an empty stack!");
+        RUNTIME_ASSERT(this->_top > 0, "Top called on an empty stack!");
 
         T ret = this->data[this->_top - 1];
         return ret;
@@ -65,22 +65,22 @@ public:
         return this->data.size();
     }
 
-    void debugStack() {
+    IF_DEBUG(void debugStack() {
 
-        auto stream = Logger::debugStream();
+        LOG_BEGIN();
 
-        stream << std::endl;
+        LOG_STREAM(std::endl);
 
         if (_top == 0) {
-            stream << "  [~]" << std::endl;
+            LOG_STREAM("  [~]" << std::endl);
         } else {
             for (auto i = _top - 1; i >= 0; i--) {
-                stream << "  [" << i << "] - " << this->data[i].int64 << std::endl;
+                LOG_STREAM("  [" << i << "] - " << this->data[i].int64 << std::endl);
             }
         }
 
-        Logger::debug("Stack", stream);
-    }
+        LOG_END("Stack");
+    })
 };
 
 

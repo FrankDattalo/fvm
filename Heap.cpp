@@ -4,7 +4,7 @@
 
 #include "Heap.h"
 #include "Assert.h"
-#include "Logger.h"
+#include "Debug.h"
 
 namespace {
     const std::string TAG ("Heap");
@@ -12,15 +12,15 @@ namespace {
 
 HeapObject * Heap::newHeapObject(int64_t numberObjects) {
 
-    Logger::debug(TAG, "newHeapObject - waiting to acquire lock");
+    DEBUG(TAG, "newHeapObject - waiting to acquire lock");
 
     std::lock_guard<std::mutex> guard(lock);
 
-    Logger::debug(TAG, "newHeapObject - acquired lock");
+    DEBUG(TAG, "newHeapObject - acquired lock");
 
-    Logger::debug(TAG, "Creating new heap object");
+    DEBUG(TAG, "Creating new heap object");
 
-    auto * heapObject = new HeapObject(numberObjects);
+    auto * heapObject = new HeapObject(numberObjects, static_cast<int8_t>(this->heapGeneration - 1));
 
     this->heapObjects.insert(heapObject);
 
@@ -29,117 +29,117 @@ HeapObject * Heap::newHeapObject(int64_t numberObjects) {
 
 bool Heap::isHeapObject(HeapObject *maybeReference) {
 
-    Logger::debug(TAG, "isHeapObject - waiting to acquire lock");
+    DEBUG(TAG, "isHeapObject - waiting to acquire lock");
 
     std::lock_guard<std::mutex> guard(lock);
 
-    Logger::debug(TAG, "isHeapObject - acquired lock");
+    DEBUG(TAG, "isHeapObject - acquired lock");
 
     auto find = this->heapObjects.find(maybeReference);
     return find != this->heapObjects.end();
 }
 
 HeapObject * Heap::getHeapObject(Object object) {
-    Logger::debug(TAG, "getHeapObject - waiting to acquire lock");
+    DEBUG(TAG, "getHeapObject - waiting to acquire lock");
 
     std::lock_guard<std::mutex> guard(lock);
 
-    Logger::debug(TAG, "getHeapObject - acquired lock");
+    DEBUG(TAG, "getHeapObject - acquired lock");
 
-    Logger::debug(TAG, "Retrieving object from heap");
+    DEBUG(TAG, "Retrieving object from heap");
 
     auto find = this->heapObjects.find(object.ptr64);
 
-    assert_(find != this->heapObjects.end(), "Tried invalid dereference!");
+    RUNTIME_ASSERT(find != this->heapObjects.end(), "Tried invalid dereference!");
 
     return *find;
 }
 
 void Heap::commitDeleteObjects() {
-    Logger::debug(TAG, "commitDeleteObjects - waiting to acquire lock");
+    DEBUG(TAG, "commitDeleteObjects - waiting to acquire lock");
 
     std::lock_guard<std::mutex> guard(lock);
 
-    Logger::debug(TAG, "commitDeleteObjects - acquired lock");
+    DEBUG(TAG, "commitDeleteObjects - acquired lock");
 
     for (HeapObject* heapObject : this->markedForDelete) {
 
-        std::string desc(std::to_string(reinterpret_cast<int64_t>(heapObject)));
+        IF_DEBUG(std::string desc(std::to_string(reinterpret_cast<int64_t>(heapObject))));
 
-        Logger::debug(TAG, "Freeing heap object " + desc);
+        DEBUG(TAG, "Freeing heap object " + desc);
 
-        Logger::debug(TAG, "Trying to erase heap object from set");
+        DEBUG(TAG, "Trying to erase heap object from set");
 
         this->heapObjects.erase(heapObject);
 
-        Logger::debug(TAG, "Heap object " + desc + " erased from set");
+        DEBUG(TAG, "Heap object " + desc + " erased from set");
 
         delete heapObject;
 
-        Logger::debug(TAG, "Heap object " + desc + " freed from memory");
+        DEBUG(TAG, "Heap object " + desc + " freed from memory");
     }
 }
 
 void Heap::beginDeleteHeapObjects() {
 
-    Logger::debug(TAG, "beginDeleteHeapObjects - waiting to acquire lock");
+    DEBUG(TAG, "beginDeleteHeapObjects - waiting to acquire lock");
 
     std::lock_guard<std::mutex> guard(lock);
 
-    Logger::debug(TAG, "beginDeleteHeapObjects - acquired lock");
+    DEBUG(TAG, "beginDeleteHeapObjects - acquired lock");
 
     this->markedForDelete.clear();
 }
 
-void Heap::debugHeap() {
-    Logger::debug(TAG, "debugHeap - waiting to acquire lock");
+IF_DEBUG(void Heap::debugHeap() {
+    DEBUG(TAG, "debugHeap - waiting to acquire lock");
 
     std::lock_guard<std::mutex> guard(lock);
 
-    Logger::debug(TAG, "debugHeap - acquired lock");
+    DEBUG(TAG, "debugHeap - acquired lock");
 
-    auto stream = Logger::debugStream();
+    LOG_BEGIN();
 
-    stream << std::endl;
+    LOG_STREAM(std::endl);
 
     for (HeapObject* heapObject : this->heapObjects) {
-        stream << reinterpret_cast<int64_t>(heapObject)
+        LOG_STREAM(reinterpret_cast<int64_t>(heapObject)
                << "  GCAllowed: " << heapObject->gcAllowed
                << ", Marked: " << heapObject->markFlag
                << ", NumObjects: " << heapObject->numberObjects
                << ", HeapGen: " << heapObject->heapGeneration
-               << std::endl;
+               << std::endl);
     }
 
-    Logger::debug(TAG, stream);
-}
+    LOG_END(TAG);
+})
 
-void Heap::freeHeapObjects(int64_t heapGeneration) {
+void Heap::freeHeapObjects() {
 
-    Logger::debug(TAG, "freeHeapObjects - waiting to acquire lock");
+    DEBUG(TAG, "freeHeapObjects - waiting to acquire lock");
 
     std::lock_guard<std::mutex> guard(lock);
 
-    Logger::debug(TAG, "freeHeapObjects - acquired lock");
+    DEBUG(TAG, "freeHeapObjects - acquired lock");
 
-    int64_t nextHeapGeneration = heapGeneration + 1;
+    int8_t nextHeapGeneration = static_cast<int8_t>(heapGeneration + 1);
 
     for (HeapObject* object: this->heapObjects) {
-        if (object->gcAllowed && heapGeneration == object->heapGeneration && !object->markFlag) {
+        if (object->isGarbageCollectionAllowed() && heapGeneration == object->getHeapGeneration() && !object->isMarked()) {
 
-            Logger::debug(TAG, "Found unreachable object at "
+            DEBUG(TAG, "Found unreachable object at "
                                + std::to_string(reinterpret_cast<int64_t>(object)));
 
             this->markedForDelete.push_back(object);
 
         } else {
 
-            Logger::debug(TAG, "Heap object at "
+            DEBUG(TAG, "Heap object at "
                                + std::to_string(reinterpret_cast<int64_t>(object))
                                + " is reachable");
 
-            object->heapGeneration = nextHeapGeneration;
-            object->markFlag = false;
+            object->setHeapGeneration(nextHeapGeneration);
+            object->setMark(false);
         }
     }
 }
