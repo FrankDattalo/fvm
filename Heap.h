@@ -5,8 +5,6 @@
 #ifndef FVM_HEAP_H
 #define FVM_HEAP_H
 
-
-#include <functional>
 #include <mutex>
 #include <list>
 #include <unordered_set>
@@ -22,6 +20,8 @@ private:
     int8_t                          heapGeneration;
 
 public:
+    Heap();
+
     HeapObject* newHeapObject(int64_t numberObjects);
 
     bool isHeapObject(HeapObject* maybeReference);

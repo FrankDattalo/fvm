@@ -49,7 +49,8 @@ public:
         FloatToInteger,
         LoadAddress,
         StoreAddress,
-        MarkAddressCollectable,
+        GarbageCollectionEligible,
+        HasReferences,
         New
     };
 

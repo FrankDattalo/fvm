@@ -20,7 +20,6 @@ add_executable(fvm
         FileIo.cpp
         FileIo.h
         Stack.h
-        Object.cpp
         Object.h
         Writer.cpp
-        Writer.h GarbageCollector.cpp GarbageCollector.h Heap.cpp Heap.h)
+        Writer.h GarbageCollector.cpp GarbageCollector.h Heap.cpp Heap.h HeapObject.cpp HeapObject.h)

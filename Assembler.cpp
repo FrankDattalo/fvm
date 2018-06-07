@@ -219,7 +219,8 @@ namespace {
         match(current, buffer, bufferIndex, found, "FloatToInteger",                OpCode::Code::FloatToInteger);
         match(current, buffer, bufferIndex, found, "LoadAddress",                   OpCode::Code::LoadAddress);
         match(current, buffer, bufferIndex, found, "StoreAddress",                  OpCode::Code::StoreAddress);
-        match(current, buffer, bufferIndex, found, "MarkAddressCollectable",        OpCode::Code::MarkAddressCollectable);
+        match(current, buffer, bufferIndex, found, "GarbageCollectionEligible",     OpCode::Code::GarbageCollectionEligible);
+        match(current, buffer, bufferIndex, found, "HasReferences",                 OpCode::Code::HasReferences);
         match(current, buffer, bufferIndex, found, "New",                           OpCode::Code::New);
 
         RUNTIME_ASSERT(found, "No assembler rule for input: " + current);

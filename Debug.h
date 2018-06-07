@@ -10,7 +10,7 @@
 #include <sstream>
 #include <iomanip>
 
-#define ENABLE_DEBUG_1
+#define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #define DEBUG(TAG, X) Logger::logDebug(TAG, X)

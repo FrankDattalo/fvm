@@ -4,6 +4,8 @@
 
 #include <thread>
 #include <cstdint>
+
+#include "HeapObject.h"
 #include "VirtualMachine.h"
 #include "OpCode.h"
 #include "Panic.h"
@@ -241,12 +243,20 @@ void VirtualMachine::interpret(std::vector<uint8_t>& codeVector, Writer & writer
                 obj->set(offset.int64, toStore);
                 break;
             }
-            case OpCode::Code::MarkAddressCollectable: {
-                DEBUG(TAG, "MarkAddressCollectable");
-                Object address = data.pop();
+            case OpCode::Code::GarbageCollectionEligible: {
+                DEBUG(TAG, "GarbageCollectionEligible");
+                Object address = data.top();
                 DEBUG(TAG, "Address: " + std::to_string(address.int64));
                 HeapObject* obj = heap.getHeapObject(address);
                 obj->setGarbageCollectionAllowed(true);
+                break;
+            }
+            case OpCode::Code::HasReferences: {
+                DEBUG(TAG, "HasReferences");
+                Object address = data.top();
+                DEBUG(TAG, "Address: " + std::to_string(address.int64));
+                HeapObject* obj = heap.getHeapObject(address);
+                obj->setHasReferences(true);
                 break;
             }
             case OpCode::Code::New: {

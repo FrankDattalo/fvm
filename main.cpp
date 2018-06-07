@@ -5,6 +5,7 @@
 #include "VirtualMachine.h"
 #include "FileIo.h"
 #include "Panic.h"
+#include "HeapObject.h"
 
 void usage() {
     RUNTIME_ASSERT(false, "Usage:\n"

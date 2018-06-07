@@ -5,6 +5,7 @@
 #include "Heap.h"
 #include "Assert.h"
 #include "Debug.h"
+#include "HeapObject.h"
 
 namespace {
     const std::string TAG ("Heap");
@@ -20,7 +21,7 @@ HeapObject * Heap::newHeapObject(int64_t numberObjects) {
 
     DEBUG(TAG, "Creating new heap object");
 
-    auto * heapObject = new HeapObject(numberObjects, static_cast<int8_t>(this->heapGeneration - 1));
+    auto * heapObject = new HeapObject(numberObjects, static_cast<int8_t>(this->heapGeneration));
 
     this->heapObjects.insert(heapObject);
 
@@ -104,10 +105,12 @@ IF_DEBUG(void Heap::debugHeap() {
 
     for (HeapObject* heapObject : this->heapObjects) {
         LOG_STREAM(reinterpret_cast<int64_t>(heapObject)
-               << "  GCAllowed: " << heapObject->gcAllowed
-               << ", Marked: " << heapObject->markFlag
-               << ", NumObjects: " << heapObject->numberObjects
-               << ", HeapGen: " << heapObject->heapGeneration
+               << "  GCAllowed: " << heapObject->isGarbageCollectionAllowed()
+               << ", Marked: " << heapObject->isMarked()
+               << ", Size: " << heapObject->size()
+               << ", HeapGen: " << static_cast<int>(heapObject->getHeapGeneration())
+               << ", HasReferences: " << heapObject->hasReferences()
+               << ", isString: " << heapObject->isString()
                << std::endl);
     }
 
@@ -142,4 +145,12 @@ void Heap::freeHeapObjects() {
             object->setMark(false);
         }
     }
+}
+
+void Heap::setHeapGeneration(int8_t gen) {
+    this->heapGeneration = gen;
+}
+
+Heap::Heap() {
+    this->heapGeneration = 0;
 }

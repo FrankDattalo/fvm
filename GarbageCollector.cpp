@@ -7,6 +7,7 @@
 #include <list>
 #include <cstdlib>
 
+#include "HeapObject.h"
 #include "GarbageCollector.h"
 #include "Heap.h"
 #include "Panic.h"
